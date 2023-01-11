@@ -242,14 +242,14 @@
           filled
           dense
           emit-value
-          v-model="formDialog.data.currency"
+          v-model="editFormDialog.data.currency"
           :options="currencyOptions"
           label="Currency *"
         ></q-select>
         <q-input
           filled
           dense
-          v-model.trim="formDialog.data.amount"
+          v-model.trim="editFormDialog.data.amount"
           label="Amount"
           placeholder="How much do you want to charge?"
         ></q-input>
@@ -637,10 +637,8 @@
             data
           )
           .then(function (response) {
-            self.domains.push(mapDomain(response.data))
-
-            self.formDialog.show = false
-            self.formDialog.data = {}
+            self.editFormDialog.show = false
+            self.editFormDialog.data = {}
           })
           .catch(function (error) {
             LNbits.utils.notifyApiError(error)
