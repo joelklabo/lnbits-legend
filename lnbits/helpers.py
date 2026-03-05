@@ -374,3 +374,4 @@ def sha256s(value: str) -> str:
     Returns the hex as a string.
     """
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+def send_bolt12_offer(offer):\n    # TODO: Implement BOLT12 logic\n    pass
