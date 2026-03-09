@@ -15,7 +15,7 @@ description = "test pay invoice"
 async def test_services_pay_invoice(to_wallet, real_invoice):
     payment = await pay_invoice(
         wallet_id=to_wallet.id,
-        payment_request=real_invoice.get("bolt11"),
+        payment_request=real_invoice.get("bolt11_or_bolt12"),
         description=description,
     )
     assert payment

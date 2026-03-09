@@ -7,7 +7,7 @@ from collections.abc import AsyncGenerator
 from typing import cast
 from urllib.parse import parse_qs, unquote, urlparse
 
-from bolt11 import decode as bolt11_decode
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
 from coincurve import PrivateKey, PublicKey
 from loguru import logger
 from websockets import connect as ws_connect
@@ -192,11 +192,11 @@ class NWCWallet(Wallet):
         except Exception as e:
             return StatusResponse(str(e), 0)
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
-            resp = await self.conn.call("pay_invoice", {"invoice": bolt11})
+            resp = await self.conn.call("pay_invoice", {"invoice": bolt11_or_bolt12})
             preimage = resp.get("preimage", None)
-            invoice_data = bolt11_decode(bolt11)
+            invoice_data = bolt11_or_bolt12_decode(bolt11_or_bolt12)
             payment_hash = invoice_data.payment_hash
             # pay_invoice doesn't return payment data, so we need
             # to call lookup_invoice too (if supported)
@@ -210,7 +210,7 @@ class NWCWallet(Wallet):
 
             try:
                 payment_data = await self.conn.call(
-                    "lookup_invoice", {"invoice": bolt11}
+                    "lookup_invoice", {"invoice": bolt11_or_bolt12}
                 )
                 settled = payment_data.get("settled_at", None) and payment_data.get(
                     "preimage", None

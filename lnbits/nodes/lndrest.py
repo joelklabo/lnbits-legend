@@ -418,7 +418,7 @@ class LndRestNode(Node):
                     if payment["htlcs"]
                     else None
                 ),
-                bolt11=payment["payment_request"],
+                bolt11_or_bolt12=payment["payment_request"],
                 preimage=payment["payment_preimage"],
             )
             for payment in response["payments"]
@@ -466,7 +466,7 @@ class LndRestNode(Node):
                 paid_at=invoice["settle_date"],
                 expiry=int(invoice["creation_date"]) + int(invoice["expiry"]),
                 preimage=_decode_bytes(invoice["r_preimage"]),
-                bolt11=invoice["payment_request"],
+                bolt11_or_bolt12=invoice["payment_request"],
             )
             for invoice in reversed(response["invoices"])
         ]

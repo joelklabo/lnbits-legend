@@ -3,7 +3,7 @@ import hashlib
 
 import pytest
 
-from lnbits import bolt11
+from lnbits import bolt11_or_bolt12
 from lnbits.core.crud import get_standalone_payment, update_payment
 from lnbits.core.crud.wallets import create_wallet, get_wallet
 from lnbits.core.models import CreateInvoice, Payment, PaymentState
@@ -119,7 +119,7 @@ async def test_pay_real_invoice_mainnet(
     payment_hash = "dce88a2f9e489fc0ebb0989e8c6323e56ee13dd5523c9e08e833b5e97fd694b2"
 
     response = await client.post(
-        "/api/v1/payments", json={"bolt11": inv}, headers=adminkey_headers_from
+        "/api/v1/payments", json={"bolt11_or_bolt12": inv}, headers=adminkey_headers_from
     )
     assert response.status_code == 520
     invoice = response.json()
@@ -179,7 +179,7 @@ async def test_create_real_invoice(client, adminkey_headers_from, inkey_headers_
         raise FakeError()
 
     task = create_task(wait_for_paid_invoices("test_create_invoice", on_paid)())
-    pay_real_invoice(invoice["bolt11"])
+    pay_real_invoice(invoice["bolt11_or_bolt12"])
 
     # wait for the task to exit
     with pytest.raises(FakeError):
@@ -269,13 +269,13 @@ async def test_pay_hold_invoice_check_pending(
     task = asyncio.create_task(
         client.post(
             "/api/v1/payments",
-            json={"bolt11": invoice["payment_request"]},
+            json={"bolt11_or_bolt12": invoice["payment_request"]},
             headers=adminkey_headers_from,
         )
     )
     await asyncio.sleep(3)
     # get payment hash from the invoice
-    invoice_obj = bolt11.decode(invoice["payment_request"])
+    invoice_obj = bolt11_or_bolt12.decode(invoice["payment_request"])
     settle_invoice(preimage)
     payment_db = await get_standalone_payment(invoice_obj.payment_hash)
     assert payment_db
@@ -298,14 +298,14 @@ async def test_pay_hold_invoice_check_pending_and_fail(
     task = asyncio.create_task(
         client.post(
             "/api/v1/payments",
-            json={"bolt11": invoice["payment_request"]},
+            json={"bolt11_or_bolt12": invoice["payment_request"]},
             headers=adminkey_headers_from,
         )
     )
     await asyncio.sleep(1)
 
     # get payment hash from the invoice
-    invoice_obj = bolt11.decode(invoice["payment_request"])
+    invoice_obj = bolt11_or_bolt12.decode(invoice["payment_request"])
 
     preimage_hash = hashlib.sha256(bytes.fromhex(preimage)).hexdigest()
 
@@ -333,14 +333,14 @@ async def test_pay_hold_invoice_check_pending_and_fail_cancel_payment_task_in_me
     task = asyncio.create_task(
         client.post(
             "/api/v1/payments",
-            json={"bolt11": invoice["payment_request"]},
+            json={"bolt11_or_bolt12": invoice["payment_request"]},
             headers=adminkey_headers_from,
         )
     )
     await asyncio.sleep(1)
 
     # get payment hash from the invoice
-    invoice_obj = bolt11.decode(invoice["payment_request"])
+    invoice_obj = bolt11_or_bolt12.decode(invoice["payment_request"])
 
     # cancel payment task, this simulates the client dropping the connection
     task.cancel()
@@ -420,7 +420,7 @@ async def test_receive_real_invoice_set_pending_and_check_state(
         raise FakeError()
 
     task = create_task(wait_for_paid_invoices("test_create_invoice", on_paid)())
-    pay_real_invoice(invoice["bolt11"])
+    pay_real_invoice(invoice["bolt11_or_bolt12"])
 
     with pytest.raises(FakeError):
         await task
@@ -445,7 +445,7 @@ async def test_check_fee_reserve(client, adminkey_headers_from):
         )
         assert response.status_code < 300
         invoice = response.json()
-        payment_request = invoice["bolt11"]
+        payment_request = invoice["bolt11_or_bolt12"]
 
     response = await client.get(
         f"/api/v1/payments/fee-reserve?invoice={payment_request}",

@@ -4,7 +4,7 @@ from datetime import datetime
 from hashlib import sha256
 from os import urandom
 
-from bolt11 import (
+from bolt11_or_bolt12 import (
     Bolt11,
     Bolt11Exception,
     MilliSatoshi,
@@ -87,14 +87,14 @@ class FakeWallet(Wallet):
 
         self.payment_secrets[payment_hash] = preimage.hex()
 
-        bolt11 = Bolt11(
+        bolt11_or_bolt12 = Bolt11(
             currency="bc",
             amount_msat=MilliSatoshi(amount * 1000),
             date=int(datetime.now().timestamp()),
             tags=tags,
         )
 
-        payment_request = encode(bolt11, self.privkey)
+        payment_request = encode(bolt11_or_bolt12, self.privkey)
 
         return InvoiceResponse(
             ok=True,
@@ -103,9 +103,9 @@ class FakeWallet(Wallet):
             preimage=preimage.hex(),
         )
 
-    async def pay_invoice(self, bolt11: str, _: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, _: int) -> PaymentResponse:
         try:
-            invoice = decode(bolt11)
+            invoice = decode(bolt11_or_bolt12)
         except Bolt11Exception as exc:
             return PaymentResponse(ok=False, error_message=str(exc))
 

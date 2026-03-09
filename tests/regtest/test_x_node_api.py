@@ -6,7 +6,7 @@ import pytest
 from httpx import AsyncClient, Headers
 from pydantic import parse_obj_as
 
-from lnbits import bolt11
+from lnbits import bolt11_or_bolt12
 from lnbits.nodes.base import ChannelPoint, ChannelState, NodeChannel
 from lnbits.settings import Settings
 
@@ -101,7 +101,7 @@ async def test_node_payments(node_client, real_invoice, adminkey_headers_from):
     assert len(payments) == 1
     assert (
         payments[0]["payment_hash"]
-        == bolt11.decode(real_invoice["bolt11"]).payment_hash
+        == bolt11_or_bolt12.decode(real_invoice["bolt11_or_bolt12"]).payment_hash
     )
 
 

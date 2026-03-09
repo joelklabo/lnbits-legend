@@ -303,7 +303,7 @@ class CoreLightningNode(Node):
             result = await self.ln_rpc("listpays")
             return [
                 NodePayment(
-                    bolt11=pay.get("bolt11"),
+                    bolt11_or_bolt12=pay.get("bolt11_or_bolt12"),
                     amount=pay.get("amount_msat", 0),
                     fee=int(pay.get("amount_msat", 0))
                     - int(pay.get("amount_sent_msat", 0)),
@@ -347,7 +347,7 @@ class CoreLightningNode(Node):
         return Page(
             data=[
                 NodeInvoice(
-                    bolt11=invoice.get("bolt11") or invoice.get("bolt12"),
+                    bolt11_or_bolt12=invoice.get("bolt11_or_bolt12") or invoice.get("bolt12"),
                     amount=(
                         # normal invoice
                         invoice.get("amount_msat")

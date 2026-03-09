@@ -7,7 +7,7 @@ import pytest
 import shortuuid
 from pytest_mock.plugin import MockerFixture
 
-from lnbits import bolt11
+from lnbits import bolt11_or_bolt12
 from lnbits.core.models import CreateInvoice, Payment
 from lnbits.core.models.users import Account, UserExtra, UserLabel
 from lnbits.core.services.users import create_user_account
@@ -149,7 +149,7 @@ async def test_create_invoice(client, inkey_headers_to):
     invoice = response.json()
     assert "payment_hash" in invoice
     assert len(invoice["payment_hash"]) == 64
-    assert "bolt11" in invoice
+    assert "bolt11_or_bolt12" in invoice
     assert "checking_id" in invoice
     assert len(invoice["checking_id"])
     return invoice
@@ -164,7 +164,7 @@ async def test_create_invoice_fiat_amount(client, inkey_headers_to):
     )
     assert response.status_code == 201
     invoice = response.json()
-    decode = bolt11.decode(invoice["bolt11"])
+    decode = bolt11_or_bolt12.decode(invoice["bolt11_or_bolt12"])
     assert decode.amount_msat != data["amount"] * 1000
     assert decode.payment_hash
 
@@ -210,7 +210,7 @@ async def test_create_fiat_invoice(
     )
     assert response.status_code == 201
     invoice = response.json()
-    decode = bolt11.decode(invoice["bolt11"])
+    decode = bolt11_or_bolt12.decode(invoice["bolt11_or_bolt12"])
     assert decode.amount_msat == 10_000_000
     assert decode.payment_hash
     assert invoice["fiat_provider"] == "stripe"
@@ -260,7 +260,7 @@ async def test_create_internal_invoice(client, inkey_headers_to):
     assert response.status_code == 201
     assert "payment_hash" in invoice
     assert len(invoice["payment_hash"]) == 64
-    assert "bolt11" in invoice
+    assert "bolt11_or_bolt12" in invoice
     assert "checking_id" in invoice
     assert len(invoice["checking_id"])
     return invoice
@@ -277,8 +277,8 @@ async def test_create_invoice_custom_expiry(client, inkey_headers_to):
     )
     assert response.status_code == 201
     invoice = response.json()
-    bolt11_invoice = bolt11.decode(invoice["bolt11"])
-    assert bolt11_invoice.expiry == expiry_seconds
+    bolt11_or_bolt12_invoice = bolt11_or_bolt12.decode(invoice["bolt11_or_bolt12"])
+    assert bolt11_or_bolt12_invoice.expiry == expiry_seconds
 
 
 # check POST /api/v1/payments: make payment
@@ -286,7 +286,7 @@ async def test_create_invoice_custom_expiry(client, inkey_headers_to):
 async def test_pay_invoice(
     client, from_wallet_ws, invoice: Payment, adminkey_headers_from
 ):
-    data = {"out": True, "bolt11": invoice.bolt11}
+    data = {"out": True, "bolt11_or_bolt12": invoice.bolt11_or_bolt12}
     response = await client.post(
         "/api/v1/payments", json=data, headers=adminkey_headers_from
     )
@@ -340,7 +340,7 @@ async def test_check_payment_with_key(client, invoice: Payment, inkey_headers_fr
 # check POST /api/v1/payments: payment with wrong key type
 @pytest.mark.anyio
 async def test_pay_invoice_wrong_key(client, invoice, adminkey_headers_from):
-    data = {"out": True, "bolt11": invoice.bolt11}
+    data = {"out": True, "bolt11_or_bolt12": invoice.bolt11_or_bolt12}
     # try payment with wrong key
     wrong_adminkey_headers = adminkey_headers_from.copy()
     wrong_adminkey_headers["X-Api-Key"] = "wrong_key"
@@ -361,7 +361,7 @@ async def test_pay_invoice_self_payment(client, adminkey_headers_from):
     )
     assert response.status_code < 300
     json_data = response.json()
-    data = {"out": True, "bolt11": json_data["bolt11"]}
+    data = {"out": True, "bolt11_or_bolt12": json_data["bolt11_or_bolt12"]}
     response = await client.post(
         "/api/v1/payments", json=data, headers=adminkey_headers_from
     )
@@ -371,7 +371,7 @@ async def test_pay_invoice_self_payment(client, adminkey_headers_from):
 # check POST /api/v1/payments: payment with invoice key [should fail]
 @pytest.mark.anyio
 async def test_pay_invoice_invoicekey(client, invoice, inkey_headers_from):
-    data = {"out": True, "bolt11": invoice.bolt11}
+    data = {"out": True, "bolt11_or_bolt12": invoice.bolt11_or_bolt12}
     # try payment with invoice key
     response = await client.post(
         "/api/v1/payments", json=data, headers=inkey_headers_from
@@ -382,7 +382,7 @@ async def test_pay_invoice_invoicekey(client, invoice, inkey_headers_from):
 # check POST /api/v1/payments: payment with admin key, trying to pay twice [should fail]
 @pytest.mark.anyio
 async def test_pay_invoice_adminkey(client, invoice, adminkey_headers_from):
-    data = {"out": True, "bolt11": invoice.bolt11}
+    data = {"out": True, "bolt11_or_bolt12": invoice.bolt11_or_bolt12}
     # try payment with admin key
     response = await client.post(
         "/api/v1/payments", json=data, headers=adminkey_headers_from
@@ -485,7 +485,7 @@ async def test_get_payments_history(client, inkey_fresh_headers_to, fake_payment
 # check POST /api/v1/payments/decode
 @pytest.mark.anyio
 async def test_decode_invoice(client, invoice: Payment):
-    data = {"data": invoice.bolt11}
+    data = {"data": invoice.bolt11_or_bolt12}
     response = await client.post(
         "/api/v1/payments/decode",
         json=data,
@@ -528,8 +528,8 @@ async def test_create_invoice_with_description_hash(client, inkey_headers_to):
     )
     invoice = response.json()
 
-    invoice_bolt11 = bolt11.decode(invoice["bolt11"])
-    assert invoice_bolt11.description_hash == descr_hash
+    invoice_bolt11_or_bolt12 = bolt11_or_bolt12.decode(invoice["bolt11_or_bolt12"])
+    assert invoice_bolt11_or_bolt12.description_hash == descr_hash
     return invoice
 
 
@@ -545,9 +545,9 @@ async def test_create_invoice_with_unhashed_description(client, inkey_headers_to
     )
     invoice = response.json()
 
-    invoice_bolt11 = bolt11.decode(invoice["bolt11"])
-    assert invoice_bolt11.description_hash == descr_hash
-    assert invoice_bolt11.description is None
+    invoice_bolt11_or_bolt12 = bolt11_or_bolt12.decode(invoice["bolt11_or_bolt12"])
+    assert invoice_bolt11_or_bolt12.description_hash == descr_hash
+    assert invoice_bolt11_or_bolt12.description is None
     return invoice
 
 

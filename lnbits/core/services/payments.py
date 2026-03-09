@@ -2,9 +2,9 @@ import asyncio
 import time
 from datetime import datetime, timedelta, timezone
 
-from bolt11 import Bolt11, MilliSatoshi, Tags
-from bolt11 import decode as bolt11_decode
-from bolt11 import encode as bolt11_encode
+from bolt11_or_bolt12 import Bolt11, MilliSatoshi, Tags
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
+from bolt11_or_bolt12 import encode as bolt11_or_bolt12_encode
 from lnurl import LnurlErrorResponse, LnurlSuccessResponse
 from lnurl import execute_withdraw as lnurl_withdraw
 from loguru import logger
@@ -90,7 +90,7 @@ async def pay_invoice(
 
         create_payment_model = CreatePayment(
             wallet_id=wallet.source_wallet_id,
-            bolt11=payment_request,
+            bolt11_or_bolt12=payment_request,
             payment_hash=invoice.payment_hash,
             amount_msat=-amount_msat,
             expiry=invoice.expiry_date,
@@ -225,7 +225,7 @@ async def create_wallet_invoice(wallet_id: str, data: CreateInvoice) -> Payment:
             check_callback_url(data.lnurl_withdraw.callback)
             res = await lnurl_withdraw(
                 data.lnurl_withdraw,
-                payment.bolt11,
+                payment.bolt11_or_bolt12,
                 user_agent=settings.user_agent,
                 timeout=10,
             )
@@ -328,11 +328,11 @@ async def create_invoice(
             message=invoice_response.error_message or "unexpected backend error.",
             status="pending",
         )
-    invoice = bolt11_decode(invoice_response.payment_request)
+    invoice = bolt11_or_bolt12_decode(invoice_response.payment_request)
 
     create_payment_model = CreatePayment(
         wallet_id=user_wallet.source_wallet_id,
-        bolt11=invoice_response.payment_request,
+        bolt11_or_bolt12=invoice_response.payment_request,
         payment_hash=invoice.payment_hash,
         preimage=invoice_response.preimage,
         amount_msat=amount_sat * 1000,
@@ -478,12 +478,12 @@ async def update_wallet_balance(
                 ),
             )
             privkey = fake_privkey(settings.fake_wallet_secret)
-            bolt11 = bolt11_encode(invoice, privkey)
+            bolt11_or_bolt12 = bolt11_or_bolt12_encode(invoice, privkey)
             await create_payment(
                 checking_id=f"internal_{payment_hash}",
                 data=CreatePayment(
                     wallet_id=wallet.source_wallet_id,
-                    bolt11=bolt11,
+                    bolt11_or_bolt12=bolt11_or_bolt12,
                     payment_hash=payment_hash,
                     amount_msat=amount * 1000,
                     memo="Admin debit",
@@ -746,7 +746,7 @@ async def _pay_internal_invoice(
     amount_msat = create_payment_model.amount_msat
     if (
         internal_invoice.amount != abs(amount_msat)
-        or internal_invoice.bolt11 != create_payment_model.bolt11.lower()
+        or internal_invoice.bolt11_or_bolt12 != create_payment_model.bolt11_or_bolt12.lower()
     ):
         raise PaymentError("Invalid invoice. Bolt11 changed.", status="failed")
 
@@ -820,7 +820,7 @@ async def _pay_external_invoice(
     fee_reserve_msat = fee_reserve(amount_msat, internal=False)
 
     task = create_task(
-        _fundingsource_pay_invoice(checking_id, payment.bolt11, fee_reserve_msat)
+        _fundingsource_pay_invoice(checking_id, payment.bolt11_or_bolt12, fee_reserve_msat)
     )
 
     # make sure a hold invoice or deferred payment is not blocking the server
@@ -872,12 +872,12 @@ async def update_payment_success_status(
 
 
 async def _fundingsource_pay_invoice(
-    checking_id: str, bolt11: str, fee_reserve_msat: int
+    checking_id: str, bolt11_or_bolt12: str, fee_reserve_msat: int
 ) -> PaymentResponse:
     logger.debug(f"fundingsource: sending payment {checking_id}")
     funding_source = get_funding_source()
     payment_response: PaymentResponse = await funding_source.pay_invoice(
-        bolt11, fee_reserve_msat
+        bolt11_or_bolt12, fee_reserve_msat
     )
     logger.debug(f"backend: pay_invoice finished {checking_id}, {payment_response}")
     return payment_response
@@ -934,7 +934,7 @@ def _validate_payment_request(
     payment_request: str, max_sat: int | None = None
 ) -> Bolt11:
     try:
-        invoice = bolt11_decode(payment_request)
+        invoice = bolt11_or_bolt12_decode(payment_request)
     except Exception as exc:
         raise PaymentError("Bolt11 decoding failed.", status="failed") from exc
 
@@ -966,7 +966,7 @@ async def _credit_service_fee_wallet(
 
     create_payment_model = CreatePayment(
         wallet_id=settings.lnbits_service_fee_wallet,
-        bolt11=payment.bolt11,
+        bolt11_or_bolt12=payment.bolt11_or_bolt12,
         payment_hash=payment.payment_hash,
         amount_msat=abs(service_fee_msat),
         memo=memo,

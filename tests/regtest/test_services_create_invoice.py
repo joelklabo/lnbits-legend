@@ -1,5 +1,5 @@
 import pytest
-from bolt11 import decode
+from bolt11_or_bolt12 import decode
 
 from lnbits.core.services import (
     create_invoice,
@@ -24,7 +24,7 @@ async def test_create_invoice(from_wallet):
     if not is_boltz_wallet:
         assert payment.preimage
 
-    invoice = decode(payment.bolt11)
+    invoice = decode(payment.bolt11_or_bolt12)
     assert invoice.payment_hash == payment.payment_hash
     assert invoice.amount_msat == 1000000
     assert invoice.description == description
@@ -45,7 +45,7 @@ async def test_create_internal_invoice(from_wallet):
     if not is_boltz_wallet:
         assert payment.preimage
 
-    invoice = decode(payment.bolt11)
+    invoice = decode(payment.bolt11_or_bolt12)
     assert invoice.payment_hash == payment.payment_hash
     assert invoice.amount_msat == 1000000
     assert invoice.description == description

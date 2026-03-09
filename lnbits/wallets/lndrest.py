@@ -170,9 +170,9 @@ class LndRestWallet(Wallet):
                 ok=False, error_message=f"Unable to connect to {self.endpoint}."
             )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         req = {
-            "payment_request": bolt11,
+            "payment_request": bolt11_or_bolt12,
             "fee_limit_msat": fee_limit_msat,
             "timeout_seconds": 30,
             "no_inflight_updates": True,

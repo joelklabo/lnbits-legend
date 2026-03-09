@@ -263,7 +263,7 @@ async def lnurlwallet(request: Request, lightning: str = ""):
             memo=data1.get("defaultDescription", "lnurl wallet withdraw"),
         )
         url = data1.get("callback")
-        params = {"k1": data1.get("k1"), "pr": payment.bolt11}
+        params = {"k1": data1.get("k1"), "pr": payment.bolt11_or_bolt12}
         callback = url + ("&" if urlparse(url).query else "?") + urlencode(params)
 
         res2 = await client.get(callback, timeout=5)

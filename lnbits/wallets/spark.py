@@ -139,17 +139,17 @@ class SparkWallet(Wallet):
                 )
             return InvoiceResponse(
                 ok=True,
-                payment_request=r["bolt11"],
+                payment_request=r["bolt11_or_bolt12"],
                 checking_id=label,
                 preimage=r.get("preimage"),
             )
         except (SparkError, UnknownError) as e:
             return InvoiceResponse(ok=False, error_message=str(e))
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
             r = await self.pay(
-                bolt11=bolt11,
+                bolt11_or_bolt12=bolt11_or_bolt12,
                 maxfee=fee_limit_msat,
             )
             fee_msat = -int(r["msatoshi_sent"] - r["msatoshi"])
@@ -162,7 +162,7 @@ class SparkWallet(Wallet):
             )
 
         except (SparkError, UnknownError) as exc:
-            listpays = await self.listpays(bolt11)
+            listpays = await self.listpays(bolt11_or_bolt12)
             if not listpays:
                 return PaymentResponse(ok=False, error_message=str(exc))
 

@@ -124,7 +124,7 @@ class NodePayment(BaseModel):
     fee: int | None = None
     memo: str | None = None
     time: int
-    bolt11: str | None = None
+    bolt11_or_bolt12: str | None = None
     preimage: str | None
     payment_hash: str
     expiry: float | None = None
@@ -135,7 +135,7 @@ class NodeInvoice(BaseModel):
     pending: bool
     amount: int
     memo: str | None
-    bolt11: str
+    bolt11_or_bolt12: str
     preimage: str | None
     payment_hash: str
     paid_at: int | None = None

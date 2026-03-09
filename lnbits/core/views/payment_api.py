@@ -11,7 +11,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from lnurl import url_decode
 
-from lnbits import bolt11
+from lnbits import bolt11_or_bolt12
 from lnbits.core.crud.payments import (
     get_payment_count_stats,
     get_wallets_stats,
@@ -237,7 +237,7 @@ async def api_all_payments_paginated(
         To generate a new invoice for receiving funds into the authorized account,
         specify at least the first four fields in the POST body: `out: false`,
         `amount`, `unit`, and `memo`. To pay an arbitrary invoice from the funds
-        already in the authorized account, specify `out: true` and use the `bolt11`
+        already in the authorized account, specify `out: true` and use the `bolt11_or_bolt12`
         field to supply the BOLT11 invoice to be paid.
     """,
     status_code=HTTPStatus.CREATED,
@@ -253,14 +253,14 @@ async def api_payments_create(
 ) -> Payment:
     wallet_id = key_info.wallet.id
     if invoice_data.out is True and key_info.key_type == KeyType.admin:
-        if not invoice_data.bolt11:
+        if not invoice_data.bolt11_or_bolt12:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail="Missing BOLT11 invoice",
             )
         payment = await pay_invoice(
             wallet_id=wallet_id,
-            payment_request=invoice_data.bolt11,
+            payment_request=invoice_data.bolt11_or_bolt12,
             extra=invoice_data.extra,
             labels=invoice_data.labels,
         )
@@ -298,7 +298,7 @@ async def api_update_payment_labels(
 
 @payment_router.get("/fee-reserve")
 async def api_payments_fee_reserve(invoice: str = Query("invoice")) -> JSONResponse:
-    invoice_obj = bolt11.decode(invoice)
+    invoice_obj = bolt11_or_bolt12.decode(invoice)
     if invoice_obj.amount_msat:
         response = {
             "fee_reserve": fee_reserve_total(invoice_obj.amount_msat),
@@ -361,7 +361,7 @@ async def api_payments_decode(data: DecodePayment) -> JSONResponse:
             url = str(url_decode(payment_str))
             return JSONResponse({"domain": url})
         else:
-            invoice = bolt11.decode(payment_str)
+            invoice = bolt11_or_bolt12.decode(payment_str)
             filtered_data = filter_dict_keys(invoice.data, data.filter_fields)
             return JSONResponse(filtered_data)
     except Exception as exc:

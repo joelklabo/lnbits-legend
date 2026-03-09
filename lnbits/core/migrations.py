@@ -5,7 +5,7 @@ from typing import Any
 from loguru import logger
 from sqlalchemy.exc import OperationalError
 
-from lnbits import bolt11
+from lnbits import bolt11_or_bolt12
 from lnbits.db import Connection
 
 
@@ -99,7 +99,7 @@ async def m002_add_fields_to_apipayments(db: Connection):
         await db.execute("ALTER TABLE apipayments ADD COLUMN hash TEXT")
         await db.execute("CREATE INDEX by_hash ON apipayments (hash)")
         await db.execute("ALTER TABLE apipayments ADD COLUMN preimage TEXT")
-        await db.execute("ALTER TABLE apipayments ADD COLUMN bolt11 TEXT")
+        await db.execute("ALTER TABLE apipayments ADD COLUMN bolt11_or_bolt12 TEXT")
         await db.execute("ALTER TABLE apipayments ADD COLUMN extra TEXT")
 
         result = await db.execute("SELECT * FROM apipayments")
@@ -216,11 +216,11 @@ async def m007_set_invoice_expiries(db: Connection):
         result = await db.execute(
             # Timestamp placeholder is safe from SQL injection (not user input)
             f"""
-            SELECT bolt11, checking_id
+            SELECT bolt11_or_bolt12, checking_id
             FROM apipayments
             WHERE pending = true
             AND amount > 0
-            AND bolt11 IS NOT NULL
+            AND bolt11_or_bolt12 IS NOT NULL
             AND expiry IS NULL
             AND time < {db.timestamp_now}
             """  # noqa: S608
@@ -233,7 +233,7 @@ async def m007_set_invoice_expiries(db: Connection):
             checking_id,
         ) in enumerate(rows):
             try:
-                invoice = bolt11.decode(payment_request)
+                invoice = bolt11_or_bolt12.decode(payment_request)
                 if invoice.expiry is None:
                     continue
 

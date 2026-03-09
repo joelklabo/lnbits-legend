@@ -284,7 +284,7 @@ async def create_payment(
         status=status,
         wallet_id=data.wallet_id,
         payment_hash=data.payment_hash,
-        bolt11=data.bolt11,
+        bolt11_or_bolt12=data.bolt11_or_bolt12,
         amount=data.amount_msat,
         memo=data.memo,
         preimage=data.preimage,

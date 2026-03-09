@@ -123,12 +123,12 @@ class AlbyWallet(Wallet):
                 ok=False, error_message=f"Unable to connect to {self.endpoint}."
             )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
-            # https://api.getalby.com/payments/bolt11
+            # https://api.getalby.com/payments/bolt11_or_bolt12
             r = await self.client.post(
-                "/payments/bolt11",
-                json={"invoice": bolt11},  # assume never need amount in body
+                "/payments/bolt11_or_bolt12",
+                json={"invoice": bolt11_or_bolt12},  # assume never need amount in body
                 timeout=None,
             )
             r.raise_for_status()
@@ -157,7 +157,7 @@ class AlbyWallet(Wallet):
                 error_message="Server error: 'invalid json response'"
             )
         except Exception as exc:
-            logger.info(f"Failed to pay invoice {bolt11}")
+            logger.info(f"Failed to pay invoice {bolt11_or_bolt12}")
             logger.warning(exc)
             return PaymentResponse(
                 error_message=f"Unable to connect to {self.endpoint}."

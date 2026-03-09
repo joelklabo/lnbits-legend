@@ -17,7 +17,7 @@ else:
     from collections.abc import AsyncGenerator
     from pathlib import Path
 
-    from bolt11 import decode as bolt11_decode
+    from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
     from breez_sdk_liquid import (
         ConnectRequest,
         EventListener,
@@ -156,14 +156,14 @@ else:
                     )
                 )
 
-                bolt11 = res.destination
-                invoice_data = bolt11_decode(bolt11)
+                bolt11_or_bolt12 = res.destination
+                invoice_data = bolt11_or_bolt12_decode(bolt11_or_bolt12)
                 payment_hash = invoice_data.payment_hash
 
                 return InvoiceResponse(
                     ok=True,
                     checking_id=payment_hash,
-                    payment_request=bolt11,
+                    payment_request=bolt11_or_bolt12,
                     fee_msat=receive_fees_sats * 1000,
                 )
             except Exception as e:
@@ -171,12 +171,12 @@ else:
                 return InvoiceResponse(ok=False, error_message=str(e))
 
         async def pay_invoice(
-            self, bolt11: str, fee_limit_msat: int
+            self, bolt11_or_bolt12: str, fee_limit_msat: int
         ) -> PaymentResponse:
-            invoice_data = bolt11_decode(bolt11)
+            invoice_data = bolt11_or_bolt12_decode(bolt11_or_bolt12)
 
             try:
-                prepare_req = PrepareSendRequest(destination=bolt11)
+                prepare_req = PrepareSendRequest(destination=bolt11_or_bolt12)
                 req = self.sdk_services.prepare_send_payment(prepare_req)
 
                 fee_limit_sat = settings.breez_liquid_fee_offset_sat + int(
@@ -275,11 +275,11 @@ else:
                 logger.debug(f"breez invoice paid event: {details}")
                 if not details.invoice:
                     logger.warning(
-                        "Paid invoices stream expected bolt11 invoice, got None"
+                        "Paid invoices stream expected bolt11_or_bolt12 invoice, got None"
                     )
                     continue
 
-                invoice_data = bolt11_decode(details.invoice)
+                invoice_data = bolt11_or_bolt12_decode(details.invoice)
                 yield invoice_data.payment_hash
 
         async def _wait_for_outgoing_payment(

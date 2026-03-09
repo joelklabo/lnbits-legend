@@ -3,8 +3,8 @@ from collections.abc import AsyncGenerator
 from secrets import token_urlsafe
 from typing import Any
 
-from bolt11.decode import decode as bolt11_decode
-from bolt11.exceptions import Bolt11Exception
+from bolt11_or_bolt12.decode import decode as bolt11_or_bolt12_decode
+from bolt11_or_bolt12.exceptions import Bolt11Exception
 from loguru import logger
 from pyln.client import LightningRpc, RpcError
 
@@ -54,7 +54,7 @@ class CoreLightningWallet(Wallet):
         self.supports_description_hash = "deschashonly" in command
 
         # https://docs.corelightning.org/reference/lightning-pay
-        # -32602: Invalid bolt11: Prefix bc is not for regtest
+        # -32602: Invalid bolt11_or_bolt12: Prefix bc is not for regtest
         # -1: Catchall nonspecific error.
         # 201: Already paid
         # 203: Permanent failure at destination.
@@ -131,7 +131,7 @@ class CoreLightningWallet(Wallet):
             return InvoiceResponse(
                 ok=True,
                 checking_id=r["payment_hash"],
-                payment_request=r["bolt11"],
+                payment_request=r["bolt11_or_bolt12"],
                 preimage=preimage,
             )
         except RpcError as exc:
@@ -147,9 +147,9 @@ class CoreLightningWallet(Wallet):
             logger.warning(e)
             return InvoiceResponse(ok=False, error_message=str(e))
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
-            invoice = bolt11_decode(bolt11)
+            invoice = bolt11_or_bolt12_decode(bolt11_or_bolt12)
         except Bolt11Exception as exc:
             return PaymentResponse(ok=False, error_message=str(exc))
 
@@ -169,7 +169,7 @@ class CoreLightningWallet(Wallet):
             # implement your own heuristics rather than the primitive ones used
             # here.
             payload = {
-                "bolt11": bolt11,
+                "bolt11_or_bolt12": bolt11_or_bolt12,
                 "maxfee": fee_limit_msat,
                 "description": invoice.description,
             }
@@ -201,7 +201,7 @@ class CoreLightningWallet(Wallet):
                 error_message="Server error: 'missing required fields'"
             )
         except Exception as exc:
-            logger.info(f"Failed to pay invoice {bolt11}")
+            logger.info(f"Failed to pay invoice {bolt11_or_bolt12}")
             logger.warning(exc)
             return PaymentResponse(error_message=f"Payment failed: '{exc}'.")
 

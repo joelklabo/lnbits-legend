@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
-from bolt11 import decode as bolt11_decode
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
 from loguru import logger
 
 from lnbits.helpers import normalize_endpoint
@@ -187,7 +187,7 @@ class StrikeWallet(Wallet):
                 Decimal("0.00000001")
             )  # Convert amount from millisatoshis to BTC.
             payload: dict[str, Any] = {
-                "bolt11": {
+                "bolt11_or_bolt12": {
                     "amount": {
                         "currency": "BTC",
                         "amount": str(btc_amt),
@@ -197,7 +197,7 @@ class StrikeWallet(Wallet):
                 "targetCurrency": "BTC",
             }
             if description_hash:
-                payload["bolt11"]["descriptionHash"] = description_hash.hex()
+                payload["bolt11_or_bolt12"]["descriptionHash"] = description_hash.hex()
 
             r = await self._post(
                 "/receive-requests",
@@ -206,8 +206,8 @@ class StrikeWallet(Wallet):
             r.raise_for_status()
             resp = r.json()
             invoice_id = resp.get("receiveRequestId")
-            bolt11 = resp.get("bolt11", {}).get("invoice")
-            if not invoice_id or not bolt11:
+            bolt11_or_bolt12 = resp.get("bolt11_or_bolt12", {}).get("invoice")
+            if not invoice_id or not bolt11_or_bolt12:
                 return InvoiceResponse(
                     ok=False, error_message="Invalid invoice response"
                 )
@@ -215,7 +215,7 @@ class StrikeWallet(Wallet):
             self.pending_invoices.append(invoice_id)
             self._persist_pending()
             return InvoiceResponse(
-                ok=True, checking_id=invoice_id, payment_request=bolt11
+                ok=True, checking_id=invoice_id, payment_request=bolt11_or_bolt12
             )
         except httpx.HTTPStatusError as e:
             logger.warning(e)
@@ -225,11 +225,11 @@ class StrikeWallet(Wallet):
             logger.warning(e)
             return InvoiceResponse(ok=False, error_message="Connection error")
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         # Extract payment hash from invoice for checking_id
 
         try:
-            invoice = bolt11_decode(bolt11)
+            invoice = bolt11_or_bolt12_decode(bolt11_or_bolt12)
             payment_hash = invoice.payment_hash
         except Exception as decode_exc:
             logger.warning(f"Strike: Failed to decode invoice: {decode_exc}")
@@ -239,7 +239,7 @@ class StrikeWallet(Wallet):
 
         try:
             # 1) Create a payment quote
-            quote_id, error = await self._create_payment_quote(bolt11)
+            quote_id, error = await self._create_payment_quote(bolt11_or_bolt12)
             if error or not quote_id:
                 return PaymentResponse(ok=False, error_message=error or "Unknown error")
 
@@ -475,12 +475,12 @@ class StrikeWallet(Wallet):
     async def _patch(self, path: str, **kw) -> httpx.Response:
         return await self._req("PATCH", path, **kw)
 
-    async def _create_payment_quote(self, bolt11: str) -> tuple[str | None, str | None]:
+    async def _create_payment_quote(self, bolt11_or_bolt12: str) -> tuple[str | None, str | None]:
         """Create a payment quote and return (quote_id, error_message)."""
         try:
             q = await self._post(
                 "/payment-quotes/lightning",
-                json={"lnInvoice": bolt11},
+                json={"lnInvoice": bolt11_or_bolt12},
             )
             q.raise_for_status()
         except httpx.HTTPStatusError as quote_exc:

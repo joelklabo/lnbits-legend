@@ -3,7 +3,7 @@ import traceback
 from http import HTTPStatus
 
 import httpx
-from bolt11 import decode as bolt11_decode
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.requests import Request
 from loguru import logger
@@ -372,7 +372,7 @@ async def get_pay_to_install_invoice(
 
     if not (payment_info and payment_info.payment_request):
         raise ValueError("Cannot request invoice.")
-    invoice = bolt11_decode(payment_info.payment_request)
+    invoice = bolt11_or_bolt12_decode(payment_info.payment_request)
 
     if invoice.amount_msat is None:
         raise ValueError("Invoic amount is missing.")
@@ -443,7 +443,7 @@ async def get_pay_to_enable_invoice(
     user_ext_info.payment_hash_to_enable = payment.payment_hash
     user_ext.extra = user_ext_info
     await update_user_extension(user_ext)
-    return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}
+    return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11_or_bolt12}
 
 
 @extension_router.get(

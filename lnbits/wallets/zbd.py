@@ -3,7 +3,7 @@ import hashlib
 from collections.abc import AsyncGenerator
 
 import httpx
-from bolt11 import decode as bolt11_decode
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
 from loguru import logger
 
 from lnbits.helpers import normalize_endpoint
@@ -103,12 +103,12 @@ class ZBDWallet(Wallet):
             preimage=preimage,
         )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         # https://api.zebedee.io/v0/payments
         r = await self.client.post(
             "payments",
             json={
-                "invoice": bolt11,
+                "invoice": bolt11_or_bolt12,
                 "description": "",
                 "amount": "",
                 "internalId": "",
@@ -123,7 +123,7 @@ class ZBDWallet(Wallet):
 
         data = r.json()
 
-        checking_id = bolt11_decode(bolt11).payment_hash
+        checking_id = bolt11_or_bolt12_decode(bolt11_or_bolt12).payment_hash
         fee_msat = -int(data["data"]["fee"])
         preimage = data["data"]["preimage"]
 

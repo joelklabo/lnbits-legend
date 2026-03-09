@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import httpx
-from bolt11 import decode as bolt11_decode
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
 from coincurve.keys import PrivateKey
 from embit.bip39 import mnemonic_from_bytes, mnemonic_is_valid
 from loguru import logger
@@ -122,9 +122,9 @@ class SparkL2Wallet(Wallet):
                 "expiry_seconds": expiry_secs,
             }
             res = await self._request("POST", "/v1/invoices", payload)
-            bolt11 = res.get("payment_request")
+            bolt11_or_bolt12 = res.get("payment_request")
             checking_id = res.get("checking_id")
-            if not bolt11 or not checking_id:
+            if not bolt11_or_bolt12 or not checking_id:
                 return InvoiceResponse(
                     ok=False,
                     error_message="Spark sidecar invoice response missing fields.",
@@ -133,25 +133,25 @@ class SparkL2Wallet(Wallet):
 
             return InvoiceResponse(
                 ok=True,
-                payment_request=bolt11,
+                payment_request=bolt11_or_bolt12,
                 checking_id=checking_id,
                 preimage=res.get("preimage", None),
             )
         except Exception as e:
             return InvoiceResponse(ok=False, error_message=str(e))
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
             max_fee_sats = (int(fee_limit_msat) + 999) // 1000
 
             payment_hash = None
             try:
-                payment_hash = bolt11_decode(bolt11).payment_hash
+                payment_hash = bolt11_or_bolt12_decode(bolt11_or_bolt12).payment_hash
             except Exception as exc:
                 logger.warning(exc)
                 payment_hash = None
             payload = {
-                "bolt11": bolt11,
+                "bolt11_or_bolt12": bolt11_or_bolt12,
                 "max_fee_sats": max_fee_sats,
                 "payment_hash": payment_hash,
             }

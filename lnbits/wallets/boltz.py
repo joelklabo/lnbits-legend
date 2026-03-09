@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncGenerator
 
-from bolt11.decode import decode
+from bolt11_or_bolt12.decode import decode
 from grpc.aio import AioRpcError
 from loguru import logger
 
@@ -123,7 +123,7 @@ class BoltzWallet(Wallet):
             fee_msat=fee_msat,
         )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
 
         pair = boltzrpc_pb2.Pair(**{"from": boltzrpc_pb2.LBTC})
         try:
@@ -132,7 +132,7 @@ class BoltzWallet(Wallet):
                 type=boltzrpc_pb2.SUBMARINE, pair=pair
             )
             pair_info = await self.rpc.GetPairInfo(pair_request, metadata=self.metadata)
-            invoice = decode(bolt11)
+            invoice = decode(bolt11_or_bolt12)
 
             if not invoice.amount_msat:
                 raise ValueError("amountless invoice")
@@ -145,7 +145,7 @@ class BoltzWallet(Wallet):
                 return PaymentResponse(ok=False, error_message=error)
 
             request = boltzrpc_pb2.CreateSwapRequest(
-                invoice=bolt11,
+                invoice=bolt11_or_bolt12,
                 pair=pair,
                 wallet_id=self.wallet_id,
                 zero_conf=True,

@@ -28,7 +28,7 @@ async def test_pay_raise_unsupported(app):
         checking_id=payment_hash,
         amount=1000,
         wallet_id="fake_wallet_id",
-        bolt11="fake_holdinvoice",
+        bolt11_or_bolt12="fake_holdinvoice",
         payment_hash=payment_hash,
         fee=0,
     )
@@ -99,7 +99,7 @@ async def test_settle_real_hold_invoice(app, from_wallet):
         await settle_hold_invoice(payment=payment, preimage=preimage)
 
     def pay_invoice():
-        pay_real_invoice(payment.bolt11)
+        pay_real_invoice(payment.bolt11_or_bolt12)
 
     async def settle():
         await asyncio.sleep(1)

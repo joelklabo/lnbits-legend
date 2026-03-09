@@ -89,7 +89,7 @@ class LNbitsWallet(Wallet):
             data = r.json()
 
             # Backwards compatibility for pre-v1 which used the key "payment_request"
-            payment_str = data.get("bolt11") or data.get("payment_request")
+            payment_str = data.get("bolt11_or_bolt12") or data.get("payment_request")
             if r.is_error or not payment_str:
                 error_message = data["detail"] if "detail" in data else r.text
                 return InvoiceResponse(
@@ -117,11 +117,11 @@ class LNbitsWallet(Wallet):
                 ok=False, error_message=f"Unable to connect to {self.endpoint}."
             )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
             r = await self.client.post(
                 url="/api/v1/payments",
-                json={"out": True, "bolt11": bolt11},
+                json={"out": True, "bolt11_or_bolt12": bolt11_or_bolt12},
                 timeout=None,
             )
 
@@ -162,7 +162,7 @@ class LNbitsWallet(Wallet):
                 error_message="Server error: 'missing required fields'"
             )
         except Exception as exc:
-            logger.info(f"Failed to pay invoice {bolt11}")
+            logger.info(f"Failed to pay invoice {bolt11_or_bolt12}")
             logger.warning(exc)
             return PaymentResponse(
                 error_message=f"Unable to connect to {self.endpoint}."

@@ -217,7 +217,7 @@ async def _credit_fiat_service_fee_wallet(
     )
     create_payment_model = CreatePayment(
         wallet_id=limits.service_fee_wallet_id,
-        bolt11=payment.bolt11,
+        bolt11_or_bolt12=payment.bolt11_or_bolt12,
         payment_hash=payment.payment_hash,
         amount_msat=abs(payment.fee),
         memo=memo,
@@ -257,7 +257,7 @@ async def _debit_fiat_service_faucet_wallet(
     )
     create_payment_model = CreatePayment(
         wallet_id=limits.service_faucet_wallet_id,
-        bolt11=payment.bolt11,
+        bolt11_or_bolt12=payment.bolt11_or_bolt12,
         payment_hash=payment.payment_hash,
         amount_msat=-abs(payment.amount),
         memo=memo,

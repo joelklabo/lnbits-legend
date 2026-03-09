@@ -99,10 +99,10 @@ class OpenNodeWallet(Wallet):
             ok=True, checking_id=checking_id, payment_request=payment_request
         )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         r = await self.client.post(
             "/v2/withdrawals",
-            json={"type": "ln", "address": bolt11},
+            json={"type": "ln", "address": bolt11_or_bolt12},
             timeout=None,
         )
 

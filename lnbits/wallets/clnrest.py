@@ -8,8 +8,8 @@ from collections.abc import AsyncGenerator
 from urllib.parse import urlparse
 
 import httpx
-from bolt11 import Bolt11Exception
-from bolt11.decode import decode
+from bolt11_or_bolt12 import Bolt11Exception
+from bolt11_or_bolt12.decode import decode
 from loguru import logger
 
 from lnbits.exceptions import UnsupportedError
@@ -93,7 +93,7 @@ class CLNRestWallet(Wallet):
             )
 
         # https://docs.corelightning.org/reference/lightning-pay
-        # -32602: Invalid bolt11: Prefix bc is not for regtest
+        # -32602: Invalid bolt11_or_bolt12: Prefix bc is not for regtest
         # -1: Catchall nonspecific error.
         ## 201: Already paid
         # 203: Permanent failure at destination.
@@ -222,14 +222,14 @@ class CLNRestWallet(Wallet):
                 logger.debug(f"Error creating invoice: {error_message}")
                 return InvoiceResponse(ok=False, error_message=error_message)
 
-            if "payment_hash" not in response_data or "bolt11" not in response_data:
+            if "payment_hash" not in response_data or "bolt11_or_bolt12" not in response_data:
                 return InvoiceResponse(
                     ok=False, error_message="Server error: 'missing required fields'"
                 )
             return InvoiceResponse(
                 ok=True,
                 checking_id=response_data["payment_hash"],
-                payment_request=response_data["bolt11"],
+                payment_request=response_data["bolt11_or_bolt12"],
                 preimage=data["preimage"],
             )
 
@@ -246,13 +246,13 @@ class CLNRestWallet(Wallet):
 
     async def pay_invoice(
         self,
-        bolt11: str,
+        bolt11_or_bolt12: str,
         fee_limit_msat: int,
         **_,
     ) -> PaymentResponse:
 
         try:
-            invoice = decode(bolt11)
+            invoice = decode(bolt11_or_bolt12)
         except Bolt11Exception as exc:
             return PaymentResponse(ok=False, error_message=str(exc))
 
@@ -276,11 +276,11 @@ class CLNRestWallet(Wallet):
         if settings.clnrest_renepay_rune:
             endpoint = "/v1/renepay"
             headers = self.renepay_headers
-            data["invstring"] = bolt11
+            data["invstring"] = bolt11_or_bolt12
         else:
             endpoint = "/v1/pay"
             headers = self.pay_headers
-            data["bolt11"] = bolt11
+            data["bolt11_or_bolt12"] = bolt11_or_bolt12
 
         try:
             r = await self.client.post(
@@ -319,7 +319,7 @@ class CLNRestWallet(Wallet):
                 logger.warning(error_message)
                 return PaymentResponse(error_message=error_message)
         except Exception as exc:
-            logger.info(f"Failed to pay invoice {bolt11}")
+            logger.info(f"Failed to pay invoice {bolt11_or_bolt12}")
             logger.warning(exc)
             error_message = f"Unable to connect to {self.url}."
             return PaymentResponse(error_message=error_message)

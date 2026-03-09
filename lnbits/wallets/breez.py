@@ -17,8 +17,8 @@ else:
     from collections.abc import AsyncGenerator
     from pathlib import Path
 
-    from bolt11 import Bolt11Exception
-    from bolt11 import decode as bolt11_decode
+    from bolt11_or_bolt12 import Bolt11Exception
+    from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
     from breez_sdk import (
         BreezEvent,
         ConnectRequest,
@@ -200,7 +200,7 @@ else:
                 return InvoiceResponse(
                     ok=True,
                     checking_id=breez_invoice.ln_invoice.payment_hash,
-                    payment_request=breez_invoice.ln_invoice.bolt11,
+                    payment_request=breez_invoice.ln_invoice.bolt11_or_bolt12,
                     # preimage=breez_invoice.ln_invoice.payment_preimage,
                 )
             except Exception as e:
@@ -208,19 +208,19 @@ else:
                 return InvoiceResponse(ok=False, error_message=str(e))
 
         async def pay_invoice(
-            self, bolt11: str, fee_limit_msat: int
+            self, bolt11_or_bolt12: str, fee_limit_msat: int
         ) -> PaymentResponse:
             logger.debug(f"fee_limit_msat {fee_limit_msat} is ignored by Breez SDK")
             try:
-                invoice = bolt11_decode(bolt11)
+                invoice = bolt11_or_bolt12_decode(bolt11_or_bolt12)
             except Bolt11Exception as exc:
                 logger.warning(exc)
                 return PaymentResponse(
-                    ok=False, error_message=f"invalid bolt11 invoice: {exc}"
+                    ok=False, error_message=f"invalid bolt11_or_bolt12 invoice: {exc}"
                 )
             try:
                 send_payment_request = SendPaymentRequest(
-                    bolt11=bolt11, use_trampoline=settings.breez_use_trampoline
+                    bolt11_or_bolt12=bolt11_or_bolt12, use_trampoline=settings.breez_use_trampoline
                 )
                 send_payment_response: SendPaymentResponse = (
                     self.sdk_services.send_payment(send_payment_request)

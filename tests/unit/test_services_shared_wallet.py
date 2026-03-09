@@ -562,7 +562,7 @@ async def test_shared_wallet_view_permissions(from_wallet: Wallet):
             amount=1000 + i * 100,
             memo=f"Test invoice {i}",
         )
-        await pay_invoice(wallet_id=from_wallet.id, payment_request=payment.bolt11)
+        await pay_invoice(wallet_id=from_wallet.id, payment_request=payment.bolt11_or_bolt12)
         wallet_balance += payment.sat
 
     filters = Filters(limit=100, model=PaymentFilters)
@@ -596,7 +596,7 @@ async def test_shared_wallet_view_permissions(from_wallet: Wallet):
     with pytest.raises(
         PaymentError, match="Wallet does not have permission to pay invoices."
     ):
-        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11)
+        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11_or_bolt12)
 
 
 @pytest.mark.anyio
@@ -637,7 +637,7 @@ async def test_shared_wallet_no_permissions(from_wallet: Wallet):
     with pytest.raises(
         PaymentError, match="Wallet does not have permission to pay invoices."
     ):
-        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11)
+        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11_or_bolt12)
 
 
 @pytest.mark.anyio
@@ -676,7 +676,7 @@ async def test_shared_wallet_receive_permission(from_wallet: Wallet):
     with pytest.raises(
         PaymentError, match="Wallet does not have permission to pay invoices."
     ):
-        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11)
+        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11_or_bolt12)
 
     shared_wallet_payments = await get_payments(wallet_id=mirror_wallet.id)
     assert len(shared_wallet_payments) == 0
@@ -695,7 +695,7 @@ async def test_shared_wallet_receive_permission(from_wallet: Wallet):
     with pytest.raises(
         PaymentError, match="Wallet does not have permission to pay invoices."
     ):
-        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11)
+        await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11_or_bolt12)
 
 
 @pytest.mark.anyio
@@ -733,7 +733,7 @@ async def test_shared_wallet_send_permission(from_wallet: Wallet):
         memo="Test invoice",
     )
     await update_wallet_balance(mirror_wallet, 100000)
-    await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11)
+    await pay_invoice(wallet_id=mirror_wallet.id, payment_request=payment.bolt11_or_bolt12)
 
     share = source_wallet.extra.find_share_for_wallet(mirror_wallet.id)
     assert share is not None

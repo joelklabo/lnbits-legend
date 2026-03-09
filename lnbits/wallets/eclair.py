@@ -144,11 +144,11 @@ class EclairWallet(Wallet):
                 ok=False, error_message=f"Unable to connect to {self.url}."
             )
 
-    async def pay_invoice(self, bolt11: str, fee_limit_msat: int) -> PaymentResponse:
+    async def pay_invoice(self, bolt11_or_bolt12: str, fee_limit_msat: int) -> PaymentResponse:
         try:
             r = await self.client.post(
                 "/payinvoice",
-                data={"invoice": bolt11, "blocking": True},
+                data={"invoice": bolt11_or_bolt12, "blocking": True},
                 timeout=None,
             )
             r.raise_for_status()
@@ -174,7 +174,7 @@ class EclairWallet(Wallet):
                 error_message="Server error: 'missing required fields'"
             )
         except Exception as exc:
-            logger.info(f"Failed to pay invoice {bolt11}")
+            logger.info(f"Failed to pay invoice {bolt11_or_bolt12}")
             logger.warning(exc)
             return PaymentResponse(error_message=f"Unable to connect to {self.url}.")
 

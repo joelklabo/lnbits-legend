@@ -41,10 +41,10 @@ def payhash():
 
 
 @pytest.fixture(scope="session")
-def outbound_bolt11():
-    # put your outbound bolt11 here
-    bolt11 = "lnbc1u1pjl0uhypp5yxvdqq923atm9ywkpgtu3yxv9w2n44ensrkwfyagvmzqhml2x9gqdpv2phhwetjv4jzqcneypqyc6t8dp6xu6twva2xjuzzda6qcqzzsxqrrsssp5h3qlnnlfqekquacwwj9yu7fhujyzxhzqegpxenscw45pgv6xakfq9qyyssqqjruygw0jrcg3365jksxn6yhsxx7c5pdjrjdlyvuhs7xh8r409h4e3kucc54kgh34pscaq3mg7hn55l8a0qszgzex80amwrp4gkdgqcpkse88y"  # noqa: E501
-    return bolt11
+def outbound_bolt11_or_bolt12():
+    # put your outbound bolt11_or_bolt12 here
+    bolt11_or_bolt12 = "lnbc1u1pjl0uhypp5yxvdqq923atm9ywkpgtu3yxv9w2n44ensrkwfyagvmzqhml2x9gqdpv2phhwetjv4jzqcneypqyc6t8dp6xu6twva2xjuzzda6qcqzzsxqrrsssp5h3qlnnlfqekquacwwj9yu7fhujyzxhzqegpxenscw45pgv6xakfq9qyyssqqjruygw0jrcg3365jksxn6yhsxx7c5pdjrjdlyvuhs7xh8r409h4e3kucc54kgh34pscaq3mg7hn55l8a0qszgzex80amwrp4gkdgqcpkse88y"  # noqa: E501
+    return bolt11_or_bolt12
 
 
 @pytest.mark.anyio
@@ -112,9 +112,9 @@ async def test_pay_invoice_self_payment():
     if use_real_api:
         invoice_response = await funding_source.create_invoice(amount=100, memo="test")
         assert invoice_response.ok is True
-        bolt11 = invoice_response.payment_request
-        assert bolt11 is not None
-        payment_response = await funding_source.pay_invoice(bolt11, fee_limit_msat=100)
+        bolt11_or_bolt12 = invoice_response.payment_request
+        assert bolt11_or_bolt12 is not None
+        payment_response = await funding_source.pay_invoice(bolt11_or_bolt12, fee_limit_msat=100)
         assert payment_response.ok is False  # can't pay self
         assert payment_response.error_message
 
@@ -123,10 +123,10 @@ async def test_pay_invoice_self_payment():
 
 
 @pytest.mark.anyio
-async def test_outbound_invoice_payment(outbound_bolt11):
+async def test_outbound_invoice_payment(outbound_bolt11_or_bolt12):
     if use_real_api:
         payment_response = await funding_source.pay_invoice(
-            outbound_bolt11, fee_limit_msat=100
+            outbound_bolt11_or_bolt12, fee_limit_msat=100
         )
         assert payment_response.ok is True
         assert payment_response.checking_id

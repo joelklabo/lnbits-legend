@@ -2,10 +2,10 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-from bolt11 import TagChar
-from bolt11 import decode as bolt11_decode
-from bolt11 import encode as bolt11_encode
-from bolt11.types import MilliSatoshi
+from bolt11_or_bolt12 import TagChar
+from bolt11_or_bolt12 import decode as bolt11_or_bolt12_decode
+from bolt11_or_bolt12 import encode as bolt11_or_bolt12_encode
+from bolt11_or_bolt12.types import MilliSatoshi
 from pytest_mock.plugin import MockerFixture
 
 from lnbits.core.crud import create_wallet, get_standalone_payment, get_wallet
@@ -25,7 +25,7 @@ from lnbits.wallets.fake import FakeWallet
 
 
 @pytest.mark.anyio
-async def test_invalid_bolt11(to_wallet: Wallet):
+async def test_invalid_bolt11_or_bolt12(to_wallet: Wallet):
     with pytest.raises(PaymentError):
         await pay_invoice(
             wallet_id=to_wallet.id,
@@ -58,7 +58,7 @@ async def test_bad_wallet_id(to_wallet: Wallet):
     ):
         await pay_invoice(
             wallet_id=bad_wallet_id,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
         )
 
 
@@ -72,7 +72,7 @@ async def test_payment_explicit_limit(to_wallet: Wallet):
         await pay_invoice(
             wallet_id=to_wallet.id,
             max_sat=100,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
         )
 
 
@@ -86,7 +86,7 @@ async def test_payment_system_limit(to_wallet: Wallet, settings: Settings):
     ):
         await pay_invoice(
             wallet_id=to_wallet.id,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
         )
 
 
@@ -106,12 +106,12 @@ async def test_pay_twice(to_wallet: Wallet):
     payment = await create_invoice(wallet_id=to_wallet.id, amount=3, memo="Twice")
     await pay_invoice(
         wallet_id=to_wallet.id,
-        payment_request=payment.bolt11,
+        payment_request=payment.bolt11_or_bolt12,
     )
     with pytest.raises(PaymentError, match="Internal invoice already paid."):
         await pay_invoice(
             wallet_id=to_wallet.id,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
         )
 
 
@@ -128,13 +128,13 @@ async def test_pay_twice_fast():
     async def pay_first():
         return await pay_invoice(
             wallet_id=wallet_one.id,
-            payment_request=payment_a.bolt11,
+            payment_request=payment_a.bolt11_or_bolt12,
         )
 
     async def pay_second():
         return await pay_invoice(
             wallet_id=wallet_one.id,
-            payment_request=payment_b.bolt11,
+            payment_request=payment_b.bolt11_or_bolt12,
         )
 
     with pytest.raises(PaymentError, match="Insufficient balance."):
@@ -158,13 +158,13 @@ async def test_pay_twice_fast_same_invoice(to_wallet: Wallet):
     async def pay_first():
         return await pay_invoice(
             wallet_id=to_wallet.id,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
         )
 
     async def pay_second():
         return await pay_invoice(
             wallet_id=to_wallet.id,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
         )
 
     with pytest.raises(PaymentError, match="Payment already paid."):
@@ -190,9 +190,9 @@ async def test_fake_wallet_pay_external(
 async def test_invoice_changed(to_wallet: Wallet):
     payment = await create_invoice(wallet_id=to_wallet.id, amount=21, memo="original")
 
-    invoice = bolt11_decode(payment.bolt11)
+    invoice = bolt11_or_bolt12_decode(payment.bolt11_or_bolt12)
     invoice.amount_msat = MilliSatoshi(12000)
-    payment_request = bolt11_encode(invoice)
+    payment_request = bolt11_or_bolt12_encode(invoice)
 
     with pytest.raises(PaymentError, match="Invalid invoice. Bolt11 changed."):
         await pay_invoice(
@@ -200,9 +200,9 @@ async def test_invoice_changed(to_wallet: Wallet):
             payment_request=payment_request,
         )
 
-    invoice = bolt11_decode(payment_request)
+    invoice = bolt11_or_bolt12_decode(payment_request)
     invoice.tags.add(TagChar.description, "mock stuff")
-    payment_request = bolt11_encode(invoice)
+    payment_request = bolt11_or_bolt12_encode(invoice)
 
     with pytest.raises(PaymentError, match="Invalid invoice."):
         await pay_invoice(
@@ -215,7 +215,7 @@ async def test_invoice_changed(to_wallet: Wallet):
 async def test_pay_for_extension(to_wallet: Wallet, settings: Settings):
     payment = await create_invoice(wallet_id=to_wallet.id, amount=3, memo="Allowed")
     await pay_invoice(
-        wallet_id=to_wallet.id, payment_request=payment.bolt11, tag="lnurlp"
+        wallet_id=to_wallet.id, payment_request=payment.bolt11_or_bolt12, tag="lnurlp"
     )
     payment = await create_invoice(wallet_id=to_wallet.id, amount=3, memo="Not Allowed")
     settings.lnbits_admin_extensions = ["lnurlp"]
@@ -224,7 +224,7 @@ async def test_pay_for_extension(to_wallet: Wallet, settings: Settings):
     ):
         await pay_invoice(
             wallet_id=to_wallet.id,
-            payment_request=payment.bolt11,
+            payment_request=payment.bolt11_or_bolt12,
             tag="lnurlp",
         )
 
@@ -244,7 +244,7 @@ async def test_notification_for_internal_payment(to_wallet: Wallet):
         webhook="http://test.404.lnbits.com",
     )
     await pay_invoice(
-        wallet_id=to_wallet.id, payment_request=payment.bolt11, extra={"tag": "lnurlp"}
+        wallet_id=to_wallet.id, payment_request=payment.bolt11_or_bolt12, extra={"tag": "lnurlp"}
     )
     await asyncio.sleep(1)
 
@@ -253,7 +253,7 @@ async def test_notification_for_internal_payment(to_wallet: Wallet):
         assert _payment
         if _payment.memo == test_name:
             assert _payment.status == PaymentState.SUCCESS.value
-            assert _payment.bolt11 == payment.bolt11
+            assert _payment.bolt11_or_bolt12 == payment.bolt11_or_bolt12
             assert _payment.amount == 123_000
             updated_payment = await get_payment(_payment.checking_id)
             assert updated_payment.webhook_status == "404"
@@ -394,7 +394,7 @@ async def test_pay_external_invoice_pending(
     assert _payment.status == PaymentState.PENDING.value
     assert _payment.checking_id == payment.payment_hash
     assert _payment.amount == -2103_000
-    assert _payment.bolt11 == external_invoice.payment_request
+    assert _payment.bolt11_or_bolt12 == external_invoice.payment_request
 
     wallet = await get_wallet(from_wallet.id)
     assert wallet
@@ -490,7 +490,7 @@ async def test_pay_external_invoice_success(
     assert _payment.status == PaymentState.SUCCESS.value
     assert _payment.checking_id == payment.payment_hash
     assert _payment.amount == -2104_000
-    assert _payment.bolt11 == external_invoice.payment_request
+    assert _payment.bolt11_or_bolt12 == external_invoice.payment_request
     assert _payment.preimage == preimage
 
     wallet = await get_wallet(from_wallet.id)
@@ -647,7 +647,7 @@ async def test_service_fee(
     assert _payment.checking_id == payment.payment_hash
     assert _payment.amount == -2112_000
     assert _payment.fee == -422_400
-    assert _payment.bolt11 == external_invoice.payment_request
+    assert _payment.bolt11_or_bolt12 == external_invoice.payment_request
     assert _payment.preimage == preimage
 
     service_fee_payment = await get_standalone_payment(
@@ -657,7 +657,7 @@ async def test_service_fee(
     assert service_fee_payment.status == PaymentState.SUCCESS.value
     assert service_fee_payment.checking_id == f"service_fee_{payment.payment_hash}"
     assert service_fee_payment.amount == 422_400
-    assert service_fee_payment.bolt11 == external_invoice.payment_request
+    assert service_fee_payment.bolt11_or_bolt12 == external_invoice.payment_request
     assert service_fee_payment.preimage is None
 
 
@@ -679,7 +679,7 @@ async def test_get_payments_for_user(to_wallet: Wallet):
     # this will create a payment in the to_wallet that we need to count for at the end
     await pay_invoice(
         wallet_id=to_wallet.id,
-        payment_request=payment.bolt11,
+        payment_request=payment.bolt11_or_bolt12,
     )
     user_payments = await get_payments_paginated(user_id=user.id)
     assert user_payments.total == 1
@@ -694,7 +694,7 @@ async def test_get_payments_for_user(to_wallet: Wallet):
 
     await pay_invoice(
         wallet_id=wallet_one.id,
-        payment_request=payment.bolt11,
+        payment_request=payment.bolt11_or_bolt12,
     )
     user_payments = await get_payments_paginated(user_id=user.id)
     assert user_payments.total == 4

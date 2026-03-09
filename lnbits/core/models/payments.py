@@ -44,7 +44,7 @@ class PayInvoice(BaseModel):
 class CreatePayment(BaseModel):
     wallet_id: str
     payment_hash: str
-    bolt11: str
+    bolt11_or_bolt12: str
     amount_msat: int
     memo: str
     extra: dict | None = {}
@@ -61,7 +61,7 @@ class Payment(BaseModel):
     wallet_id: str
     amount: int
     fee: int
-    bolt11: str
+    bolt11_or_bolt12: str
     payment_request: str | None = Field(default=None, no_database=True)
     fiat_provider: str | None = None
     status: str = PaymentState.PENDING
@@ -83,7 +83,7 @@ class Payment(BaseModel):
         if "fiat_payment_request" in self.extra:
             self.payment_request = self.extra["fiat_payment_request"]
         else:
-            self.payment_request = self.bolt11
+            self.payment_request = self.bolt11_or_bolt12
 
     @property
     def pending(self) -> bool:
@@ -245,7 +245,7 @@ class CreateInvoice(BaseModel):
     expiry: int | None = None
     extra: dict | None = None
     webhook: str | None = None
-    bolt11: str | None = None
+    bolt11_or_bolt12: str | None = None
     lnurl_withdraw: LnurlWithdrawResponse | None = None
     fiat_provider: str | None = None
     labels: list[str] = []

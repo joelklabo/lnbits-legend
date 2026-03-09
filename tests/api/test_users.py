@@ -693,7 +693,7 @@ async def test_user_activation(
     assert response.status_code == 404
     assert response.json().get("detail") == "Wallet not found."
 
-    data = {"out": True, "bolt11": invoice.bolt11}
+    data = {"out": True, "bolt11_or_bolt12": invoice.bolt11_or_bolt12}
     response = await http_client.post(
         "/api/v1/payments",
         json=data,
