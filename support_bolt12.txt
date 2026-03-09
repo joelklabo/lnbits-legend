@@ -1,0 +1,1 @@
+# Code changes to handle BOLT12 offers would go here. Placeholder for the actual implementation steps.
