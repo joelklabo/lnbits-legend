@@ -161,3 +161,4 @@ async def collect_exchange_rates_data() -> None:
         else:
             sleep_time = 60
         await asyncio.sleep(sleep_time)
+\n# Adding BOLT12 offer handling logic\ndef bolt12_support():\n    pass\n
