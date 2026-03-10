@@ -245,6 +245,9 @@ async def create_wallet_invoice(wallet_id: str, data: CreateInvoice) -> Payment:
 
 
 async def create_invoice(
+    # Add BOLT12 offer handling logic here
+    if offer.is_bolt12:
+        handle_bolt12(offer)
     *,
     wallet_id: str,
     amount: float,

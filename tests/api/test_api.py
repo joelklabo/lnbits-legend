@@ -574,6 +574,9 @@ async def test_update_wallet(client, adminkey_headers_from):
 @pytest.mark.anyio
 async def test_fiat_tracking(client, adminkey_headers_from, settings: Settings):
     async def create_invoice():
+    # Add BOLT12 offer handling logic here
+    if offer.is_bolt12:
+        handle_bolt12(offer)
         data = await get_random_invoice_data()
         response = await client.post(
             "/api/v1/payments", json=data, headers=adminkey_headers_from

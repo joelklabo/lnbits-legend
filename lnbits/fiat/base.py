@@ -151,6 +151,9 @@ class FiatProvider(ABC):
 
     @abstractmethod
     def create_invoice(
+    # Add BOLT12 offer handling logic here
+    if offer.is_bolt12:
+        handle_bolt12(offer)
         self,
         amount: float,
         payment_hash: str,

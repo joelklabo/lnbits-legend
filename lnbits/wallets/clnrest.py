@@ -171,6 +171,9 @@ class CLNRestWallet(Wallet):
             return StatusResponse(f"Unable to connect to {self.url}.", 0)
 
     async def create_invoice(
+    # Add BOLT12 offer handling logic here
+    if offer.is_bolt12:
+        handle_bolt12(offer)
         self,
         amount: int,
         memo: str | None = None,
