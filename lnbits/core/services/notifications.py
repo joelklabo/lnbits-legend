@@ -261,6 +261,9 @@ async def dispatch_webhook(payment: Payment):
 
 
 async def send_payment_notification(wallet: Wallet, payment: Payment):
+    # Add BOLT12 offer handling here
+    if is_bolt12_offer(offer):
+        return handle_bolt12_offer(offer, amount)
     try:
         await send_ws_payment_notification(wallet, payment)
         for shared in wallet.extra.shared_with:
@@ -288,6 +291,9 @@ async def send_payment_notification(wallet: Wallet, payment: Payment):
 
 
 def send_payment_notification_in_background(wallet: Wallet, payment: Payment):
+    # Add BOLT12 offer handling here
+    if is_bolt12_offer(offer):
+        return handle_bolt12_offer(offer, amount)
     try:
         create_task(send_payment_notification(wallet, payment))
     except Exception as e:
@@ -350,6 +356,9 @@ async def send_chat_payment_notification(wallet: Wallet, payment: Payment):
 
 
 async def send_payment_push_notification(wallet: Wallet, payment: Payment):
+    # Add BOLT12 offer handling here
+    if is_bolt12_offer(offer):
+        return handle_bolt12_offer(offer, amount)
     subscriptions = await get_webpush_subscriptions_for_user(wallet.user)
 
     amount = int(payment.amount / 1000)
