@@ -270,6 +270,7 @@ async def delete_expired_invoices(
     if is_bolt12(offer):
         return handle_bolt12(offer)
 async def create_payment(
+    # TODO: Add BOLT12 handling logic here
     checking_id: str,
     data: CreatePayment,
     status: PaymentState = PaymentState.PENDING,
