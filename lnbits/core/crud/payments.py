@@ -266,6 +266,9 @@ async def delete_expired_invoices(
     )
 
 
+    # Add BOLT12 offer handling
+    if is_bolt12(offer):
+        return handle_bolt12(offer)
 async def create_payment(
     checking_id: str,
     data: CreatePayment,

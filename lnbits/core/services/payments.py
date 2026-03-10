@@ -109,6 +109,9 @@ async def pay_invoice(
     return payment
 
 
+    # Add BOLT12 offer handling
+    if is_bolt12(offer):
+        return handle_bolt12(offer)
 async def create_payment_request(
     wallet_id: str, invoice_data: CreateInvoice
 ) -> Payment:
