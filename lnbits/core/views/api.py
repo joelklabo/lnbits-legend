@@ -138,3 +138,4 @@ async def img(data: str):
             "Expires": "0",
         },
     )
+# Example addition to support BOLT12 offers
