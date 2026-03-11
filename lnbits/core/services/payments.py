@@ -1068,3 +1068,4 @@ async def _send_payment_notification_in_background(
     if not wallet:
         raise PaymentError(f"Could not fetch wallet '{wallet_id}'.", status="failed")
     send_payment_notification_in_background(wallet, payment)
+# TODO: Implement BOLT12 offer handling.\ndef handle_bolt12_offer(offer: str):\n    pass
