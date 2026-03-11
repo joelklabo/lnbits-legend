@@ -128,3 +128,4 @@ def is_valid_url(url):
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
+\ndef handle_bolt12_offer(offer):\n    # TODO: Implement BOLT12 offer sending logic\n    pass
